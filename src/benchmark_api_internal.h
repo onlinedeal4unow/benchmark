@@ -1,48 +1,88 @@
-#ifndef BENCHMARK_API_INTERNAL_H
+#ifndefBENCHMARK_API_INTERNAL_H
 #define BENCHMARK_API_INTERNAL_H
+#include cmath
+#include <iosfwd
+#include <limits
+#include <memory
+#include <string
+#include vector
+#include benchmark/benchmark.h
+#include commandlineflags.h
 
-#include "benchmark/benchmark.h"
+namespace benchmark
+namespace internal
 
-#include <cmath>
-#include <iosfwd>
-#include <limits>
-#include <string>
-#include <vector>
+ Information kept per benchmark we may want to runHEAD
+  struct Benchmark::Instance
+  std::string name
+  Benchmark* benchmark
+  ReportMode report_mode
+  std::vector<int arg
+  json json_arg
+  TimeUnit time_unit
+  int range_multiplier
+  bool use_real_time
+  bool use_manual_time
+  BigO complexity
+BigOFunc* complexity_lambda
+  UserCounters counters
+  const std::vector<Statistics* statistics
+class BenchmarkInstance {
+ public:
+  BenchmarkInstance(Benchmark* benchmark, const std::vector<int64_t& args,
+                    int threads)
 
-namespace benchmark {
-namespace internal {
+  const BenchmarkName& name() const { return name_ }
+  AggregationReportMode aggregation_report_mode() const {
+    return aggregation_report_mode_
+  }
+  TimeUnit time_unit() const { return time_unit_ }
+  bool measure_process_cpu_time() const { return measure_process_cpu_time_ }
+  bool use_real_time() const { return use_real_time_ }
+  bool use_manual_time() const { return use_manual_time_ }
+  BigO complexity() const { return complexity_ }
+  BigOFunc& complexity_lambda() const { return *complexity_lambda_ }
+  const std::vector<Statistics& statistics() const { return statistics_ }
+  int repetitions() const { return repetitions_ }
+  double min_time() const { return min_time_ }
+  IterationCount iterations() const { return iterations_ }
+  int threads() const { return threads_ }
 
-// Information kept per benchmark we may want to run
-struct Benchmark::Instance {
-  std::string name;
-  Benchmark* benchmark;
-  ReportMode report_mode;
-  std::vector<int> arg;
-  json json_arg;
-  TimeUnit time_unit;
-  int range_multiplier;
-  bool use_real_time;
-  bool use_manual_time;
-  BigO complexity;
-  BigOFunc* complexity_lambda;
-  UserCounters counters;
-  const std::vector<Statistics>* statistics;
-  bool last_benchmark_instance;
-  int repetitions;
-  double min_time;
-  size_t iterations;
-  int threads;  // Number of concurrent threads to us
-};
+ upstream/32-bit-action
+  bool last_benchmark_instance
 
-bool FindBenchmarksInternal(const std::string& re,
-                            std::vector<Benchmark::Instance>* benchmarks,
-                            std::ostream* Err);
+  State Run(IterationCount iters, int thread_id, internal::ThreadTimer* timer,
+            internal::ThreadManager* manager,
+            internal::PerfCountersMeasurement* perf_counters_measurement) const
 
-bool IsZero(double n);
+ private:
+  BenchmarkName name_
+  Benchmark& benchmark_
+  AggregationReportMode aggregation_report_mode_
+  const std::vector<int64_t& args_
+  TimeUnit time_unit_
+  bool measure_process_cpu_time_
+  bool use_real_time_
+  bool use_manual_time_
+  BigO complexity_
+  BigOFunc* complexity_lambda_
+  UserCounters counters_
+  const std::vector<Statistics& statistics_
+  int repetitions_
+  double min_time_
+  IterationCount iterations_
+  int threads_
+  // Number of concurrent threads to us
 
-ConsoleReporter::OutputOptions GetOutputOptions(bool force_no_color = false);
+bool FindBenchmarksInternal(const std::string& re
+                            std::vector<BenchmarkInstance* benchmarks,
+                            std::ostream* Err)
 
-}  // end namespace internal
-}  // end namespace benchmark
+bool IsZero(double n)
 
-#endif  // BENCHMARK_API_INTERNAL_H
+ConsoleReporter::OutputOptions GetOutputOptions bool force_no_color = false
+
+  // end namespace internal
+  
+#e// end namespace benchmark
+ndif  // BENCHMARK_API_INTERNAL_H

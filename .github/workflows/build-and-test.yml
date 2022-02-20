@@ -1,0 +1,127 @@
+name: build-and-test
+
+on:
+  push: {}
+  pull_request: {}
+
+jobs:
+  # TODO: add coverage build (requires lcov)
+  # TODO: add clang + libc++ builds for ubuntu
+  # TODO: add clang + ubsan/asan/msan + libc++ builds for ubuntu
+  job:
+    name: ${{ matrix.os }}.${{ matrix.build_type }}.${{ matrix.compiler }}.${{ matrix.bits }}_bit
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-16.04, ubuntu-20.04, macos-latest]
+        build_type: ['Release', 'Debug']
+        compiler: [g++, clang++]
+        include:
+          - displayTargetName: windows-latest.release
+            os: windows-latest
+            build_type: 'Release'
+          - displayTargetName: windows-latest.debug
+            os: windows-latest
+            build_type: 'Debug'
+          - displayTargetName: ubuntu-latest.debug.clang++.32_bit
+            os: ubuntu-latest
+            build_type: 'Debug'
+            compiler: clang++
+            bits: '32'
+    env:
+      EXTRA_FLAGS: ''
+      BUILD_32_BITS: off
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install 32-bit
+        if: matrix.bits == '32'
+        run: sudo apt -y install g++-multilib libc6-i386
+        
+      - name: set 32-bit env
+        if: matrix.bits == '32'
+        run: |
+          echo "EXTRA_FLAGS=-m32" >> $GITHUB_ENV
+          echo "BUILD_32_BITS=on" >> $GITHUB_ENV
+
+      - name: create build environment
+        run: cmake -E make_directory ${{ runner.workspace }}/_build
+
+      - name: configure cmake
+        env:
+          CXX: ${{ matrix.compiler }}
+        shell: bash
+        working-directory: ${{ runner.workspace }}/_build
+        run: >
+          cmake $GITHUB_WORKSPACE
+          -DBENCHMARK_DOWNLOAD_DEPENDENCIES=ON
+          -DBENCHMARK_BUILD_32_BITS=${{ env.BUILD_32_BITS }}
+          -DEXTRA_FLAGS=${{ env.EXTRA_FLAGS }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: build
+        shell: bash
+        working-directory: ${{ runner.workspace }}/_build
+        run: cmake --build . --config ${{ matrix.build_type }} --verbose
+
+      - name: test
+        shell: bash
+        working-directory: ${{ runner.workspace }}/_build
+        run: ctest -C ${{ matrix.build_type }} -VV
+
+  ubuntu-14_04:
+    name: ubuntu-14.04.${{ matrix.build_type }}.${{ matrix.compiler }}
+    runs-on: [ubuntu-latest]
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: ['Release', 'Debug']
+        compiler: [g++-4.8, clang++-3.6, g++-6]
+    container: ubuntu:14.04
+    env:
+      ENABLE_TESTING: off
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: install required bits
+        run: |
+          sudo apt update
+          sudo apt -y install clang-3.6 cmake3 g++-4.8 git
+
+      - if: matrix.compiler == 'g++-6'
+        name: set g++-6 env
+        run: echo "ENABLE_TESTING=on" >> $GITHUB_ENV
+        
+      - if: matrix.compiler == 'g++-6'
+        name: install g++-6
+        run: |
+          sudo apt -y install software-properties-common
+          sudo add-apt-repository -y "ppa:ubuntu-toolchain-r/test"
+          sudo apt update
+          sudo apt -y install g++-6
+
+      - name: create build environment
+        run: cmake -E make_directory $GITHUB_WORKSPACE/_build
+
+      - name: configure cmake
+        env:
+          CXX: ${{ matrix.compiler }}
+        shell: bash
+        working-directory: ${{ github.workspace }}/_build
+        run: >
+          cmake $GITHUB_WORKSPACE
+          -DBENCHMARK_ENABLE_TESTING=${{ env.ENABLE_TESTING }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DBENCHMARK_DOWNLOAD_DEPENDENCIES=${{ env.ENABLE_TESTING }}
+
+      - name: build
+        shell: bash
+        working-directory: ${{ github.workspace }}/_build
+        run: cmake --build . --config ${{ matrix.build_type }}
+
+      - name: test
+        if: ${{ matrix.run_tests }}
+        shell: bash
+        working-directory: ${{ github.workspace }}/_build
+        run: ctest -C ${{ matrix.build_type }} -VV
