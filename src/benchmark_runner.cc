@@ -124,7 +124,7 @@ void RunInThread(const BenchmarkInstance* b, IterationCount iters,
           : internal::ThreadTimer::Create());
   State st =
       b->Run(iters, thread_id, &timer, manager, perf_counters_measurement);
-  CHECK(st.error_occurred() || st.iterations() >= st.max_iterations)
+  BM_CHECK(st.error_occurred() || st.iterations() >= st.max_iterations)
       << "Benchmark returned before State::KeepRunning() returned false!";
   {
     MutexLock l(manager->GetBenchmarkMutex());
@@ -168,14 +168,14 @@ BenchmarkRunner::BenchmarkRunner(
          internal::ARM_DisplayReportAggregatesOnly);
     run_results.file_report_aggregates_only =
         (b.aggregation_report_mode() & internal::ARM_FileReportAggregatesOnly);
-    CHECK(FLAGS_benchmark_perf_counters.empty() ||
-          perf_counters_measurement.IsValid())
+    BM_CHECK(FLAGS_benchmark_perf_counters.empty() ||
+             perf_counters_measurement.IsValid())
         << "Perf counters were requested but could not be set up.";
   }
 }
 
 BenchmarkRunner::IterationResults BenchmarkRunner::DoNIterations() {
-  VLOG(2) << "Running " << b.name().str() << " for " << iters << "\n";
+  BM_VLOG(2) << "Running " << b.name().str() << " for " << iters << "\n";
 
   std::unique_ptr<internal::ThreadManager> manager;
   manager.reset(new internal::ThreadManager(b.threads()));
@@ -210,8 +210,8 @@ BenchmarkRunner::IterationResults BenchmarkRunner::DoNIterations() {
   // If we were measuring whole-process CPU usage, adjust the CPU time too.
   if (b.measure_process_cpu_time()) i.results.cpu_time_used /= b.threads();
 
-  VLOG(2) << "Ran in " << i.results.cpu_time_used << "/"
-          << i.results.real_time_used << "\n";
+  BM_VLOG(2) << "Ran in " << i.results.cpu_time_used << "/"
+             << i.results.real_time_used << "\n";
 
   // By using KeepRunningBatch a benchmark can iterate more times than
   // requested, so take the iteration count from i.results.
@@ -249,7 +249,7 @@ IterationCount BenchmarkRunner::PredictNumItersNeeded(
   // But we do have *some* sanity limits though..
   const IterationCount next_iters = std::min(max_next_iters, kMaxIterations);
 
-  VLOG(3) << "Next iters: " << next_iters << ", " << multiplier << "\n";
+  BM_VLOG(3) << "Next iters: " << next_iters << ", " << multiplier << "\n";
   return next_iters;  // round up before conversion to integer.
 }
 
